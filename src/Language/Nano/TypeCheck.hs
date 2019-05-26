@@ -33,6 +33,8 @@ class HasTVars a where
 -- | Type variables of a type
 instance HasTVars Type where
   freeTVars t     = error "TBD: type freeTVars"
+--  freeTVars t     = case t of
+--                 TInt -> [TInt]
 
 -- | Free type variables of a poly-type (remove forall-bound vars)
 instance HasTVars Poly where
@@ -56,11 +58,23 @@ extendTypeEnv x s gamma = (x,s) : gamma
 -- | Lookup a type variable in a substitution;
 --   if not present, return the variable unchanged
 lookupTVar :: TVar -> Subst -> Type
-lookupTVar a sub = error "TBD: lookupTVar"
+--lookupTVar a sub =error "TBD: lookupTVar"
+lookupTVar key [] = throw (Error ("unbound variable: " ++ key))
+lookupTVar key ((ttvar, ttype):tail) 
+            | key == ttvar = ttype 
+            | otherwise = TVar key
+            
 
 -- | Remove a type variable from a substitution
 removeTVar :: TVar -> Subst -> Subst
-removeTVar a sub = error "TBD: removeTVar"
+--removeTVar a sub = error "TBD: removeTVar"
+removeTVar key [] = throw (Error ("unbound variable: " ++ key))
+removeTVar key ((ttvar, ttype):tail)
+           | key == ttvar = (L.delete (ttvar, ttype) ((ttvar, ttype):tail) )
+           | otherwise = ((ttvar, ttype):tail)  
+        -- | key /= ttvar = ((ttvar, ttype):tail)
+        -- | otherwise = removeTVar key tail
+
      
 -- | Things to which type substitutions can be apply
 class Substitutable a where
@@ -153,15 +167,15 @@ instantiate n s = error "TBD: instantiate"
 preludeTypes :: TypeEnv
 preludeTypes =
   [ ("+",    Mono $ TInt :=> TInt :=> TInt)
-  , ("-",    error "TBD: -")
-  , ("*",    error "TBD: *")
-  , ("/",    error "TBD: /")
-  , ("==",   error "TBD: ==")
-  , ("!=",   error "TBD: !=")
-  , ("<",    error "TBD: <")
-  , ("<=",   error "TBD: <=")
-  , ("&&",   error "TBD: &&")
-  , ("||",   error "TBD: ||")
+  , ("-",    Mono $ TInt :=> TInt :=> TInt)
+  , ("*",    Mono $ TInt :=> TInt :=> TInt)
+  , ("/",    Mono $ TInt :=> TInt :=> TInt)
+  , ("==",   Mono $ TBool :=> TBool :=> TBool)
+  , ("!=",   Mono $ TBool :=> TBool :=> TBool)
+  , ("<",    Mono $ TBool :=> TBool :=> TBool)
+  , ("<=",   Mono $ TBool :=> TBool :=> TBool)
+  , ("&&",   Mono $ TBool :=> TBool :=> TBool)
+  , ("||",   Mono $ TBool :=> TBool :=> TBool)
   , ("if",   error "TBD: if")
   -- lists: 
   , ("[]",   error "TBD: []")
