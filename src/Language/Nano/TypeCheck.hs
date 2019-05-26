@@ -32,13 +32,29 @@ class HasTVars a where
 
 -- | Type variables of a type
 instance HasTVars Type where
-  freeTVars t     = error "TBD: type freeTVars"
---  freeTVars t     = case t of
---                 TInt -> [TInt]
+--  freeTVars t     = error "TBD: type freeTVars"
+  freeTVars ttype = case ttype of 
+            TInt -> []
+            TBool -> []
+            t1 :=> t2 -> []
+            TVar ttvar -> [ttvar] 
+            TList ttlist -> []     
 
 -- | Free type variables of a poly-type (remove forall-bound vars)
 instance HasTVars Poly where
-  freeTVars s     = error "TBD: poly freeTVars"
+--  freeTVars s     = error "TBD: poly freeTVars"
+   freeTVars ppoly = case ppoly of 
+             Mono TInt -> []
+             Mono TBool -> []
+             Mono (t1 :=> t2) -> []
+             Mono (TVar ttvar) -> [ttvar]
+             Mono (TList ttype) -> freeTVars ttype
+ --            Forall ttvar tppoly -> freeTVars tppoly
+          --   Forall TBool ppoly -> []
+          --   Forall (t1 :=> t2) ppoly -> []
+          --   Forall (TVar ttvar) ppoly -> [ttvar]
+          --   Forall (TList ttlist) ppoly -> []
+              
 
 -- | Free type variables of a type environment
 instance HasTVars TypeEnv where
@@ -60,7 +76,7 @@ extendTypeEnv x s gamma = (x,s) : gamma
 lookupTVar :: TVar -> Subst -> Type
 --lookupTVar a sub =error "TBD: lookupTVar"
 lookupTVar key [] = throw (Error ("unbound variable: " ++ key))
-lookupTVar key ((ttvar, ttype):tail) 
+lookupTVar key ((ttvar, ttype):gamma) 
             | key == ttvar = ttype 
             | otherwise = TVar key
             
@@ -69,9 +85,9 @@ lookupTVar key ((ttvar, ttype):tail)
 removeTVar :: TVar -> Subst -> Subst
 --removeTVar a sub = error "TBD: removeTVar"
 removeTVar key [] = throw (Error ("unbound variable: " ++ key))
-removeTVar key ((ttvar, ttype):tail)
-           | key == ttvar = (L.delete (ttvar, ttype) ((ttvar, ttype):tail) )
-           | otherwise = ((ttvar, ttype):tail)  
+removeTVar key ((ttvar, ttype):gamma)
+           | key == ttvar = (L.delete (ttvar, ttype) ((ttvar, ttype):gamma) )
+           | otherwise = ((ttvar, ttype):gamma)  
         -- | key /= ttvar = ((ttvar, ttype):tail)
         -- | otherwise = removeTVar key tail
 
@@ -83,6 +99,8 @@ class Substitutable a where
 -- | Apply substitution to type
 instance Substitutable Type where  
   apply sub t         = error "TBD: type apply"
+--  apply ((ttvar, ttype):tail) ktvar        
+           
 
 -- | Apply substitution to poly-type
 instance Substitutable Poly where    
