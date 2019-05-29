@@ -46,7 +46,9 @@ instance HasTVars Type where
 instance HasTVars Poly where
    freeTVars ppoly = case ppoly of 
              Mono ttype -> freeTVars ttype
-             Forall ttvar ttype -> freeTVars ttype L.\\ [ttvar] 
+             Forall ttvar ttype ->  L.filter (\a -> (ttvar /= a)) (freeTVars ttype)
+ --    Forall ttvar ttype -> freeTVars ttype L.\\ ([ttvar] ++ [ttvar]) 
+                 --[a a]  t1 // [a] t2 
 
 --  freeTVars s     = error "TBD: poly freeTVars"
 
@@ -99,15 +101,14 @@ class Substitutable a where
 -- | Apply substitution to type
 instance Substitutable Type where  
   -- apply sub t         = error "TBD: type apply"
-  -- apply ((ttvar, ttype):tail) ttype = case ttype of
    apply _ (TInt)         = TInt
    apply _ (TBool)        = TBool            
    apply sub (TVar ttvar) = TVar ttvar                
    apply sub (t1 :=> t2)  = (apply sub t1) :=> (apply sub t2)
-   apply sub (TList tlist) = TList (apply sub tlist)            
+   apply sub (TList tlist) = TList (apply sub tlist)
+            
 --lookup ttype in () return its actual type form the list, if type is already given to you dont have to look up, but if you are given A and the list then check if A is there then return its type.       
            
-
 -- | Apply substitution to poly-type
 instance Substitutable Poly where    
   apply sub s         = error "TBD: poly apply"
