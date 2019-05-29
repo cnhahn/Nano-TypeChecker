@@ -47,23 +47,11 @@ instance HasTVars Poly where
    freeTVars ppoly = case ppoly of 
              Mono ttype -> freeTVars ttype
              Forall ttvar ttype -> freeTVars ttype L.\\ [ttvar] 
+
+--  freeTVars s     = error "TBD: poly freeTVars"
+
 --rmemeber what was bound  and delete what was in that list  (forall TVar poly delete what was in TVar)             
 --search for all the cases of ttvar in ttypes and then delete when you find them.
-
-
----------------------------------------------------------------------------------------------
-             --Mono TBool -> []
-             --Mono (t1 :=> t2) -> [] --probably need to do more thinking on this one since its type type
-             --Mono (TVar ttvar) -> [ttvar]
-             --Mono (TList ttype) -> freeTVars ttype
- --            Forall ttvar tppoly -> freeTVars tppoly
-          --   Forall TBool ppoly -> []
-          --   Forall (t1 :=> t2) ppoly -> []
-          --   Forall (TVar ttvar) ppoly -> [ttvar]
-          --   Forall (TList ttlist) ppoly -> []
----------------------------------------------------------------------------------------------
-              
---  freeTVars s     = error "TBD: poly freeTVars"
 
 -- | Free type variables of a type environment
 instance HasTVars TypeEnv where
@@ -91,7 +79,6 @@ lookupTVar key ((ttvar, ttype):gamma)
 --lookupTVar a sub =error "TBD: lookupTVar"
 --lookupTVar key [] = throw (Error ("unbound variable: " ++ key))
 
-
 -- | Remove a type variable from a substitution
 removeTVar :: TVar -> Subst -> Subst
 removeTVar key [] = throw (Error ("unbound variable: " ++ key))
@@ -111,9 +98,13 @@ class Substitutable a where
   
 -- | Apply substitution to type
 instance Substitutable Type where  
-  apply sub t         = error "TBD: type apply"
---  apply ((ttvar, ttype):tail) ttype = lookupTVar ttype ((ttvar, ttype):tail)
-               
+  -- apply sub t         = error "TBD: type apply"
+  -- apply ((ttvar, ttype):tail) ttype = case ttype of
+   apply _ (TInt)         = TInt
+   apply _ (TBool)        = TBool            
+   apply sub (TVar ttvar) = TVar ttvar                
+   apply sub (t1 :=> t2)  = (apply sub t1) :=> (apply sub t2)
+   apply sub (TList tlist) = TList (apply sub tlist)            
 --lookup ttype in () return its actual type form the list, if type is already given to you dont have to look up, but if you are given A and the list then check if A is there then return its type.       
            
 
