@@ -32,29 +32,29 @@ class HasTVars a where
 
 -- | Type variables of a type
 instance HasTVars Type where
---  freeTVars t     = error "TBD: type freeTVars"
   freeTVars ttype = case ttype of 
             TInt -> []
             TBool -> []
-            t1 :=> t2 -> []
+            t1 :=> t2 -> [] --probably need to do more thinking on this one since its type type
             TVar ttvar -> [ttvar] 
             TList ttlist -> []     
+--  freeTVars t     = error "TBD: type freeTVars"
 
 -- | Free type variables of a poly-type (remove forall-bound vars)
 instance HasTVars Poly where
---  freeTVars s     = error "TBD: poly freeTVars"
    freeTVars ppoly = case ppoly of 
-             Mono TInt -> []
-             Mono TBool -> []
-             Mono (t1 :=> t2) -> []
-             Mono (TVar ttvar) -> [ttvar]
-             Mono (TList ttype) -> freeTVars ttype
+             Mono ttype -> freeTVars ttype
+             --Mono TBool -> []
+             --Mono (t1 :=> t2) -> [] --probably need to do more thinking on this one since its type type
+             --Mono (TVar ttvar) -> [ttvar]
+             --Mono (TList ttype) -> freeTVars ttype
  --            Forall ttvar tppoly -> freeTVars tppoly
           --   Forall TBool ppoly -> []
           --   Forall (t1 :=> t2) ppoly -> []
           --   Forall (TVar ttvar) ppoly -> [ttvar]
           --   Forall (TList ttlist) ppoly -> []
               
+--  freeTVars s     = error "TBD: poly freeTVars"
 
 -- | Free type variables of a type environment
 instance HasTVars TypeEnv where
@@ -74,23 +74,28 @@ extendTypeEnv x s gamma = (x,s) : gamma
 -- | Lookup a type variable in a substitution;
 --   if not present, return the variable unchanged
 lookupTVar :: TVar -> Subst -> Type
---lookupTVar a sub =error "TBD: lookupTVar"
-lookupTVar key [] = throw (Error ("unbound variable: " ++ key))
+lookupTVar key [] =  TVar key
 lookupTVar key ((ttvar, ttype):gamma) 
             | key == ttvar = ttype 
-            | otherwise = TVar key
-            
+            | otherwise = lookupTVar key gamma
+
+--lookupTVar a sub =error "TBD: lookupTVar"
+--lookupTVar key [] = throw (Error ("unbound variable: " ++ key))
+
 
 -- | Remove a type variable from a substitution
 removeTVar :: TVar -> Subst -> Subst
---removeTVar a sub = error "TBD: removeTVar"
 removeTVar key [] = throw (Error ("unbound variable: " ++ key))
-removeTVar key ((ttvar, ttype):gamma)
-           | key == ttvar = (L.delete (ttvar, ttype) ((ttvar, ttype):gamma) )
-           | otherwise = ((ttvar, ttype):gamma)  
-        -- | key /= ttvar = ((ttvar, ttype):tail)
-        -- | otherwise = removeTVar key tail
 
+removeTVar key gamma = L.filter fun gamma
+          where
+           fun = (\(a,b) -> (key /= a)) 
+
+--removeTVar a sub = error "TBD: removeTVar"
+
+
+-- L.filter function restoflist
+-- make a function that checks a pair of a list and returns a list
      
 -- | Things to which type substitutions can be apply
 class Substitutable a where
@@ -157,11 +162,19 @@ unify st t1 t2 = error "TBD: unify"
 --------------------------------------------------------------------------------    
   
 infer :: InferState -> TypeEnv -> Expr -> (InferState, Type)
-infer st _   (EInt _)          = error "TBD: infer EInt"
-infer st _   (EBool _)         = error "TBD: infer EBool"
-infer st gamma (EVar x)        = error "TBD: infer EVar"
+--infer st _   (EInt _)          = error "TBD: infer EInt"
+--infer st _   (EBool _)         = error "TBD: infer EBool"
+--infer st gamma (EVar x)        = error "TBD: infer EVar"
+--infer st gamma (ELam x body)   = error "TBD: infer ELam"
+--infer st gamma (EApp e1 e2)    = error "TBD: infer EApp"
+--infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
+infer st _   (EInt _)          = (st, TInt)
+infer st _   (EBool _)         = (st, TBool)
+
+infer st gamma (EVar x)        = error "TBD: infer EVar" -- need gamma to be someting not as expr (st, (lookupTVar x gamma))
 infer st gamma (ELam x body)   = error "TBD: infer ELam"
 infer st gamma (EApp e1 e2)    = error "TBD: infer EApp"
+
 infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
 infer st gamma (EBin op e1 e2) = infer st gamma asApp
   where
