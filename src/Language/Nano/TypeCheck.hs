@@ -35,15 +35,23 @@ instance HasTVars Type where
   freeTVars ttype = case ttype of 
             TInt -> []
             TBool -> []
-            t1 :=> t2 -> [] --probably need to do more thinking on this one since its type type
+            t1 :=> t2 -> (freeTVars t1) ++ (freeTVars t2)
             TVar ttvar -> [ttvar] 
-            TList ttlist -> []     
+            TList ttlist -> freeTVars ttlist      
 --  freeTVars t     = error "TBD: type freeTVars"
+
+-- need to write an if statment on stuff where we take check what t1 is and t2 is then return what they are in a correct format of freeTVars t1 and freeTvars t2...
 
 -- | Free type variables of a poly-type (remove forall-bound vars)
 instance HasTVars Poly where
    freeTVars ppoly = case ppoly of 
              Mono ttype -> freeTVars ttype
+             Forall ttvar ttype -> freeTVars ttype L.\\ [ttvar] 
+--rmemeber what was bound  and delete what was in that list  (forall TVar poly delete what was in TVar)             
+--search for all the cases of ttvar in ttypes and then delete when you find them.
+
+
+---------------------------------------------------------------------------------------------
              --Mono TBool -> []
              --Mono (t1 :=> t2) -> [] --probably need to do more thinking on this one since its type type
              --Mono (TVar ttvar) -> [ttvar]
@@ -53,6 +61,7 @@ instance HasTVars Poly where
           --   Forall (t1 :=> t2) ppoly -> []
           --   Forall (TVar ttvar) ppoly -> [ttvar]
           --   Forall (TList ttlist) ppoly -> []
+---------------------------------------------------------------------------------------------
               
 --  freeTVars s     = error "TBD: poly freeTVars"
 
@@ -93,7 +102,6 @@ removeTVar key gamma = L.filter fun gamma
 
 --removeTVar a sub = error "TBD: removeTVar"
 
-
 -- L.filter function restoflist
 -- make a function that checks a pair of a list and returns a list
      
@@ -104,7 +112,9 @@ class Substitutable a where
 -- | Apply substitution to type
 instance Substitutable Type where  
   apply sub t         = error "TBD: type apply"
---  apply ((ttvar, ttype):tail) ktvar        
+--  apply ((ttvar, ttype):tail) ttype = lookupTVar ttype ((ttvar, ttype):tail)
+               
+--lookup ttype in () return its actual type form the list, if type is already given to you dont have to look up, but if you are given A and the list then check if A is there then return its type.       
            
 
 -- | Apply substitution to poly-type
