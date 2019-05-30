@@ -84,7 +84,6 @@ lookupTVar key ((ttvar, ttype):gamma)
 -- | Remove a type variable from a substitution
 removeTVar :: TVar -> Subst -> Subst
 removeTVar key [] = throw (Error ("unbound variable: " ++ key))
-
 removeTVar key gamma = L.filter fun gamma
           where
            fun = (\(a,b) -> (key /= a)) 
@@ -103,7 +102,7 @@ instance Substitutable Type where
   -- apply sub t         = error "TBD: type apply"
    apply _ (TInt)         = TInt
    apply _ (TBool)        = TBool            
-   apply sub (TVar ttvar) = TVar ttvar                
+   apply sub (TVar ttvar) = (lookupTVar ttvar sub)            
    apply sub (t1 :=> t2)  = (apply sub t1) :=> (apply sub t2)
    apply sub (TList tlist) = TList (apply sub tlist)
             
@@ -111,7 +110,10 @@ instance Substitutable Type where
            
 -- | Apply substitution to poly-type
 instance Substitutable Poly where    
-  apply sub s         = error "TBD: poly apply"
+--  apply sub s         = error "TBD: poly apply"
+    apply sub s = case s of 
+             (Mono s) -> Mono (apply sub s)
+             (Forall ttvar ttype) -> Forall ttvar (apply (removeTVar ttvar sub) ttype) 
 
 -- | Apply substitution to (all poly-types in) another substitution
 instance Substitutable Subst where  
@@ -127,7 +129,14 @@ instance Substitutable TypeEnv where
       
 -- | Extend substitution with a new type assignment
 extendSubst :: Subst -> TVar -> Type -> Subst
-extendSubst sub a t = error "TBD: extendSubst"
+extendSubst sub ttvar ttype = [(ttvar, (apply sub ttype))] ++ arr 
+       where 
+         arr = map func sub 
+         func (ttvar', ttype') = (ttvar', (apply sub' ttype'))
+         sub' = [(ttvar, (apply sub ttype))]
+         --type applied  
+
+--extendSubst sub a t = error "TBD: extendSubst"
       
 --------------------------------------------------------------------------------
 -- Problem 2: Unification
@@ -203,13 +212,13 @@ preludeTypes =
   , ("-",    Mono $ TInt :=> TInt :=> TInt)
   , ("*",    Mono $ TInt :=> TInt :=> TInt)
   , ("/",    Mono $ TInt :=> TInt :=> TInt)
-  , ("==",   Mono $ TBool :=> TBool :=> TBool)
+  , ("==",   Mono $ TInt :=> TInt :=> TInt)--Forall "a" :=> TVar "a" :=> TVar "a" :=> TVar "a" )
   , ("!=",   Mono $ TBool :=> TBool :=> TBool)
   , ("<",    Mono $ TBool :=> TBool :=> TBool)
   , ("<=",   Mono $ TBool :=> TBool :=> TBool)
   , ("&&",   Mono $ TBool :=> TBool :=> TBool)
   , ("||",   Mono $ TBool :=> TBool :=> TBool)
-  , ("if",   error "TBD: if")
+  , ("if",   Forall "a" $ Mono (TBool :=> TVar "a" :=> TVar "a" :=> TVar "a"))
   -- lists: 
   , ("[]",   error "TBD: []")
   , (":",    error "TBD: :")
