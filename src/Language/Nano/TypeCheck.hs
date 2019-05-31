@@ -161,19 +161,39 @@ extendState (InferState sub n) a t = InferState (extendSubst sub a t) n
 -- | Unify a type variable with a type; 
 --   if successful return an updated state, otherwise throw an error
 unifyTVar :: InferState -> TVar -> Type -> InferState
-unifyTVar st a t = error "TBD: unifyTVar"
+--unifyTVar st a t = error "TBD: unifyTVar"
+unifyTVar st ttvar ttvar'
+     | ttvar' == (TVar ttvar)        = st
+     | elem ttvar (freeTVars ttvar') = throw (Error ("type error: cannot unify")) 
+     | otherwise                     = extendState st ttvar ttvar'
     
 -- | Unify two types;
 --   if successful return an updated state, otherwise throw an error
 unify :: InferState -> Type -> Type -> InferState
-unify st t1 t2 = error "TBD: unify"
+--unify st t1 t2 = error "TBD: unify"
+unify st TInt TInt    = st
+unify st TInt _       = throw (Error ("type error: cannot unify TInt"))
+unify st _    TInt    = throw (Error ("type error: cannot unify TInt"))
+
+unify st TBool TBool  = st
+unify st TBool _      = throw (Error ("type error: cannot unify TBool"))
+unify st _     TBool  = throw (Error ("type error: cannot unify TBool"))
+
+unify st (TVar ttvar) ttvar'       = unifyTVar st ttvar ttvar'
+--unify st ttvar (TVar ttvar')       = unifyTVar st ttvar' ttvar
+
+--unify st (t1 :=> t2)(t3 :=> t4) = unify st t1 t1
+
+--unify st (TList tlist) (tlist') = 
+
+unify _ ttype ttype' = throw (Error ("type error: cannot unify"))
 
 --------------------------------------------------------------------------------
 -- Problem 3: Type Inference
 --------------------------------------------------------------------------------    
   
 infer :: InferState -> TypeEnv -> Expr -> (InferState, Type)
---infer st _   (EInt _)          = error "TBD: infer EInt"
+--infer st _   (EInt _)          = error "TBD: infer EInt" -- (st, TInt)
 --infer st _   (EBool _)         = error "TBD: infer EBool"
 --infer st gamma (EVar x)        = error "TBD: infer EVar"
 --infer st gamma (ELam x body)   = error "TBD: infer ELam"
@@ -182,7 +202,9 @@ infer :: InferState -> TypeEnv -> Expr -> (InferState, Type)
 infer st _   (EInt _)          = (st, TInt)
 infer st _   (EBool _)         = (st, TBool)
 
-infer st gamma (EVar x)        = error "TBD: infer EVar" -- need gamma to be someting not as expr (st, (lookupTVar x gamma))
+infer st _ (EVar x)        = (st, (TVar x))  
+-- (st, (lookupVarType x gamma))
+-- need gamma to be someting not as expr 
 infer st gamma (ELam x body)   = error "TBD: infer ELam"
 infer st gamma (EApp e1 e2)    = error "TBD: infer EApp"
 
