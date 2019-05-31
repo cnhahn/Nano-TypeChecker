@@ -103,7 +103,7 @@ instance Substitutable Type where
    apply _ (TInt)         = TInt
    apply _ (TBool)        = TBool            
    apply sub (TVar ttvar) = (lookupTVar ttvar sub)            
-   apply sub (t1 :=> t2)  = (apply sub t1) :=> (apply sub t2)
+   apply sub (t1 :=> t2)  = (apply sub t1) :=> (apply sub t2) 
    apply sub (TList tlist) = TList (apply sub tlist)
             
 --lookup ttype in () return its actual type form the list, if type is already given to you dont have to look up, but if you are given A and the list then check if A is there then return its type.       
@@ -164,7 +164,7 @@ unifyTVar :: InferState -> TVar -> Type -> InferState
 --unifyTVar st a t = error "TBD: unifyTVar"
 unifyTVar st ttvar ttvar'
      | ttvar' == (TVar ttvar)        = st
-     | elem ttvar (freeTVars ttvar') = throw (Error ("type error: cannot unify")) 
+     | elem ttvar (freeTVars ttvar') = throw (Error ("type error: cannot unify " ++ ttvar ++ " and " ++ (show ttvar') ++ " (occurs check) " )) 
      | otherwise                     = extendState st ttvar ttvar'
     
 -- | Unify two types;
@@ -172,22 +172,23 @@ unifyTVar st ttvar ttvar'
 unify :: InferState -> Type -> Type -> InferState
 --unify st t1 t2 = error "TBD: unify"
 unify st TInt TInt    = st
-unify st TInt _       = throw (Error ("type error: cannot unify TInt"))
-unify st _    TInt    = throw (Error ("type error: cannot unify TInt"))
+--unify st TInt TBool   = throw (Error ("type error: cannot unify " ++ (show ) ++ " and " ++ (show ) ))
 
 unify st TBool TBool  = st
-unify st TBool _      = throw (Error ("type error: cannot unify TBool"))
-unify st _     TBool  = throw (Error ("type error: cannot unify TBool"))
+--unify st TBool TInt   = throw (Error ("type error: cannot unify TBool and TInt"))
 
-unify st (TVar ttvar) ttvar'       = unifyTVar st ttvar ttvar'
---unify st ttvar (TVar ttvar')       = unifyTVar st ttvar' ttvar
+unify st (TVar ttvar) ttvar' = unifyTVar st ttvar ttvar'
+unify st (ttvar) (TVar ttvar') = unifyTVar st ttvar' ttvar
+--unify st (TVar ttvar) (TVar ttvar')            = unifyTVar st ttvar ttvar'
 
---unify st (t1 :=> t2)(t3 :=> t4) = unify st t1 t1
+unify st (t1 :=> t2)(t3 :=> t4) = L.union stsub stsub'
+      where 
+        InferState stsub count = unify t1 t3
+        InferState stsub' count' = unify (apply (stsub) t2) (apply (stsub) t4)
 
---unify st (TList tlist) (tlist') = 
+unify st (TList tlist) (TList tlist') = unify st tlist tlist'
 
-unify _ ttype ttype' = throw (Error ("type error: cannot unify"))
-
+unify _ ttype ttype' = throw (Error ("type error: cannot unify " ++ (show ttype) ++ " and " ++ (show ttype') ))
 --------------------------------------------------------------------------------
 -- Problem 3: Type Inference
 --------------------------------------------------------------------------------    
@@ -221,12 +222,18 @@ infer st gamma ENil = infer st gamma (EVar "[]")
 
 -- | Generalize type variables inside a type
 generalize :: TypeEnv -> Type -> Poly
-generalize gamma t = error "TBD: generalize"
+generalize ((id, ttpoly):gamma) t = error "TBD: generalize"
+--generalize ((id, ttpoly):gamma) t = Forall newEnv t
+--            where 
+--              varType = freeTVars t
+--              envVarType = freeTVars id
+--              newEnv = L.nub (varType L.\\ envVarType)
     
 -- | Instantiate a polymorphic type into a mono-type with fresh type variables
 instantiate :: Int -> Poly -> (Int, Type)
 instantiate n s = error "TBD: instantiate"
       
+
 -- | Types of built-in operators and functions      
 preludeTypes :: TypeEnv
 preludeTypes =
