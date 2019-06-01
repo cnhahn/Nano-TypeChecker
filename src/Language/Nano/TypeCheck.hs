@@ -185,6 +185,12 @@ unify st (t1 :=> t2) (t3 :=> t4) = InferState ( stsub' ++ stsub ) (count' +1)
         InferState stsub count = unify st t1 t3
         InferState stsub' count' = unify st t2 t4
 
+--unify st (t1 :=> t2)(t3 :=> t4) = L.union stsub stsub'
+  --    where 
+    --    InferState stsub count = unify t1 t3
+      --  InferState stsub' count' = unify (apply (stsub) t2) (apply (stsub) t4)
+
+
 unify st (TList tlist) (TList tlist') = unify st tlist tlist'
 
 unify _ ttype ttype' = throw (Error ("type error: cannot unify " ++ (show ttype) ++ " and " ++ (show ttype') ))
