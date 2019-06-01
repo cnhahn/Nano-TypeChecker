@@ -179,12 +179,11 @@ unify st TBool TBool  = st
 
 unify st (TVar ttvar) ttvar' = unifyTVar st ttvar ttvar'
 unify st (ttvar) (TVar ttvar') = unifyTVar st ttvar' ttvar
---unify st (TVar ttvar) (TVar ttvar')            = unifyTVar st ttvar ttvar'
 
-unify st (t1 :=> t2)(t3 :=> t4) = L.union stsub stsub'
-      where 
-        InferState stsub count = unify t1 t3
-        InferState stsub' count' = unify (apply (stsub) t2) (apply (stsub) t4)
+unify st (t1 :=> t2) (t3 :=> t4) = InferState ( stsub' ++ stsub ) (count' +1)
+     where 
+        InferState stsub count = unify st t1 t3
+        InferState stsub' count' = unify st t2 t4
 
 unify st (TList tlist) (TList tlist') = unify st tlist tlist'
 
@@ -203,7 +202,10 @@ infer :: InferState -> TypeEnv -> Expr -> (InferState, Type)
 infer st _   (EInt _)          = (st, TInt)
 infer st _   (EBool _)         = (st, TBool)
 
-infer st _ (EVar x)        = (st, (TVar x))  
+infer st _ (EVar x)        = (st, (TVar x)) 
+--infer st gamma (EVar key)        = (st, )
+   --where 
+    -- ((id, poly):xs) = lookupVarType key gamma
 -- (st, (lookupVarType x gamma))
 -- need gamma to be someting not as expr 
 infer st gamma (ELam x body)   = error "TBD: infer ELam"
@@ -223,11 +225,11 @@ infer st gamma ENil = infer st gamma (EVar "[]")
 -- | Generalize type variables inside a type
 generalize :: TypeEnv -> Type -> Poly
 generalize ((id, ttpoly):gamma) t = error "TBD: generalize"
---generalize ((id, ttpoly):gamma) t = Forall newEnv t
---            where 
---              varType = freeTVars t
---              envVarType = freeTVars id
---              newEnv = L.nub (varType L.\\ envVarType)
+--generalize sub t = Forall (TVar t) newEnv
+  --          where 
+    --          varType = freeTVars t
+      --        envVarType = freeTVars sub
+        --      newEnv = L.nub (varType L.\\ envVarType)
     
 -- | Instantiate a polymorphic type into a mono-type with fresh type variables
 instantiate :: Int -> Poly -> (Int, Type)
