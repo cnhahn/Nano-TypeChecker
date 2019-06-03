@@ -209,7 +209,7 @@ infer st _   (EInt _)          = (st, TInt)
 infer st _   (EBool _)         = (st, TBool)
 
 --infer st _ (EVar x)        = (st, (TVar x)) 
---infer st gamma (EVar key)        = (st, instantiate (lookupVarType key gamma) )
+--infer st gamma (EVar key)        = (st, (instantiate 0 (lookupVarType key gamma)) )
 
       
 -- need gamma to be someting not as expr
@@ -246,12 +246,12 @@ generalize :: TypeEnv -> Type -> Poly
  --            (Mono ttype') -> Mono (ttype')
    --          (Forall ttvar ttype) -> Forall ttvar ( generalize (L.nub ( (freeTVars ttype) L.\\ ttypeEnv ) ) t)
 
-generalize gamma t = Forall (L.head varType) $ Mono (TVar (L.head newType))
+--generalize gamma t = Forall (L.head varType) $ Mono (TVar (L.head newType))
 --generalize gamma t = throw (Error ("varType : " ++ (show varType) ++ " envVarType : " ++ (show envVarType) ++ " newType : " ++ (show newType)) )
-           where 
-              varType = freeTVars t
-              envVarType = freeTVars gamma
-              newType = (varType L.\\ envVarType)
+--           where 
+  --            varType = freeTVars t
+  --            envVarType = freeTVars gamma
+  --            newType = (varType L.\\ envVarType)
 
 --generalize tEnv ttype = case ttype of
   --  ttype -> Mono ttype
@@ -262,8 +262,14 @@ generalize gamma t = Forall (L.head varType) $ Mono (TVar (L.head newType))
         --      envVarType = freeTVars ttype
             --  newType = L.nub (varType L.\\ envVarType)
 
---generalize gamma t =
-                        
+--generalize gamma t = foldl (\acc x -> Forall x acc) (Mono t) listfreeTVs
+   --  where 
+     --   listfreeTVs = (freeTVars t) L.\\ combine -- (concat (map (\(_, x) -> freeTVars x) gamma))
+       -- combine   = concat (map (\(_, x) -> freeTVars x) gamma)
+
+generalize gamma ttype = let freeTVs = freeTVars ttype L.\\ concat (map (\(_, b) -> freeTVars b) gamma) in foldl (\acc m -> Forall m acc) (Mono ttype) freeTVs          
+
+               
 -- | Instantiate a polymorphic type into a mono-type with fresh type variables
 instantiate :: Int -> Poly -> (Int, Type)
 --instantiate n s = error "TBD: instantiate"
@@ -273,8 +279,8 @@ instantiate :: Int -> Poly -> (Int, Type)
   --       (Mono t)      -> (iint, t)
   --       (Forall as t) -> 
 
-instantiate c (Mono t) = (c, t)
-instantiate c (Forall as t) = instantiate (c+1) (apply [(as, (freshTV c))] t)         
+instantiate count (Mono ttype) = (count, ttype)
+instantiate count (Forall as ttype) = instantiate (count+1) (apply [(as, (freshTV count))] ttype)         
 
 
       
@@ -285,13 +291,13 @@ preludeTypes =
   , ("-",    Mono $ TInt :=> TInt :=> TInt)
   , ("*",    Mono $ TInt :=> TInt :=> TInt)
   , ("/",    Mono $ TInt :=> TInt :=> TInt)
-  , ("==",   Mono $ TInt :=> TInt :=> TInt)--Forall "a" :=> TVar "a" :=> TVar "a" :=> TVar "a" )
-  , ("!=",   Mono $ TBool :=> TBool :=> TBool)
+  , ("==",   Forall "something" . Mono $ TVar "something" :=> TVar "something" :=> TBool)
+  , ("!=",   Forall "something" . Mono $ TVar "something" :=> TVar "something" :=> TBool)
   , ("<",    Mono $ TBool :=> TBool :=> TBool)
   , ("<=",   Mono $ TBool :=> TBool :=> TBool)
   , ("&&",   Mono $ TBool :=> TBool :=> TBool)
   , ("||",   Mono $ TBool :=> TBool :=> TBool)
-  , ("if",   Forall "a" $ Mono (TBool :=> TVar "a" :=> TVar "a" :=> TVar "a"))
+  , ("if",   Forall "something" $ Mono (TBool :=> TVar "something" :=> TVar "something" :=> TVar "something"))
   -- lists: 
   , ("[]",   error "TBD: []")
   , (":",    error "TBD: :")
