@@ -109,7 +109,7 @@ instance Substitutable Type where
 --lookup ttype in () return its actual type form the list, if type is already given to you dont have to look up, but if you are given A and the list then check if A is there then return its type.       
            
 -- | Apply substitution to poly-type
-instance Substitutable Poly where    
+instance Substitutable Poly where
 --  apply sub s         = error "TBD: poly apply"
     apply sub s = case s of 
              (Mono s) -> Mono (apply sub s)
@@ -197,51 +197,87 @@ unify _ ttype ttype' = throw (Error ("type error: cannot unify " ++ (show ttype)
 --------------------------------------------------------------------------------
 -- Problem 3: Type Inference
 --------------------------------------------------------------------------------    
-  
+ 
 infer :: InferState -> TypeEnv -> Expr -> (InferState, Type)
 --infer st _   (EInt _)          = error "TBD: infer EInt" -- (st, TInt)
 --infer st _   (EBool _)         = error "TBD: infer EBool"
---infer st gamma (EVar x)        = error "TBD: infer EVar"
+infer st gamma (EVar x)        = error "TBD: infer EVar"
 --infer st gamma (ELam x body)   = error "TBD: infer ELam"
 --infer st gamma (EApp e1 e2)    = error "TBD: infer EApp"
 --infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
 infer st _   (EInt _)          = (st, TInt)
 infer st _   (EBool _)         = (st, TBool)
 
-infer st _ (EVar x)        = (st, (TVar x)) 
---infer st gamma (EVar key)        = (st, )
-   --where 
-    -- ((id, poly):xs) = lookupVarType key gamma
--- (st, (lookupVarType x gamma))
--- need gamma to be someting not as expr 
-infer st gamma (ELam x body)   = error "TBD: infer ELam"
+--infer st _ (EVar x)        = (st, (TVar x)) 
+--infer st gamma (EVar key)        = (st, instantiate (lookupVarType key gamma) )
+
+      
+-- need gamma to be someting not as expr
+
+--instantate c and lookupvartype on key gamma
+ 
+--infer sub tEnv (ELam x e)   = error "TBD: infer ELam"
+infer sub tEnv (ELam x e)   = (sub', ttype :=> tBody)
+     where 
+       (sub', tBody) = infer sub tEnv e
+       (Mono ttype)  = lookupVarType x tEnv
+
 infer st gamma (EApp e1 e2)    = error "TBD: infer EApp"
 
 infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
+
 infer st gamma (EBin op e1 e2) = infer st gamma asApp
   where
     asApp = EApp (EApp opVar e1) e2
     opVar = EVar (show op)
+
 infer st gamma (EIf c e1 e2) = infer st gamma asApp
   where
     asApp = EApp (EApp (EApp ifVar c) e1) e2
     ifVar = EVar "if"    
+
 infer st gamma ENil = infer st gamma (EVar "[]")
 
 -- | Generalize type variables inside a type
 generalize :: TypeEnv -> Type -> Poly
-generalize ((id, ttpoly):gamma) t = error "TBD: generalize"
---generalize sub t = Forall (TVar t) newEnv
-  --          where 
-    --          varType = freeTVars t
-      --        envVarType = freeTVars sub
-        --      newEnv = L.nub (varType L.\\ envVarType)
-    
+--generalize ((id, ttpoly):gamma) t = error "TBD: generalize"
+
+--generalize ttypeEnv t = case t of 
+ --            (Mono ttype') -> Mono (ttype')
+   --          (Forall ttvar ttype) -> Forall ttvar ( generalize (L.nub ( (freeTVars ttype) L.\\ ttypeEnv ) ) t)
+
+generalize gamma t = Forall (L.head varType) $ Mono (TVar (L.head newType))
+--generalize gamma t = throw (Error ("varType : " ++ (show varType) ++ " envVarType : " ++ (show envVarType) ++ " newType : " ++ (show newType)) )
+           where 
+              varType = freeTVars t
+              envVarType = freeTVars gamma
+              newType = (varType L.\\ envVarType)
+
+--generalize tEnv ttype = case ttype of
+  --  ttype -> Mono ttype
+    --Forall ttvar ttype' -> Forall ttvar $ Mono (newType)
+    --TVar ttvar-> Forall ttvar (generalize tEnv ($ Mono newType))
+      --   where 
+          --    varType = freeTVars ttvar
+        --      envVarType = freeTVars ttype
+            --  newType = L.nub (varType L.\\ envVarType)
+
+--generalize gamma t =
+                        
 -- | Instantiate a polymorphic type into a mono-type with fresh type variables
 instantiate :: Int -> Poly -> (Int, Type)
-instantiate n s = error "TBD: instantiate"
-      
+--instantiate n s = error "TBD: instantiate"
+--mono type and forall
 
+--instantiate iint ppoly = case ppoly of
+  --       (Mono t)      -> (iint, t)
+  --       (Forall as t) -> 
+
+instantiate c (Mono t) = (c, t)
+instantiate c (Forall as t) = instantiate (c+1) (apply [(as, (freshTV c))] t)         
+
+
+      
 -- | Types of built-in operators and functions      
 preludeTypes :: TypeEnv
 preludeTypes =

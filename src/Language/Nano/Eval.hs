@@ -114,7 +114,7 @@ exitError (Error msg) = return (VErr msg)
 -- False
 --
 -- >>> eval []  (EBin Eq (EInt 2) (EBool True))
--- False
+-- *** Exception: Error {errMsg = "type error: binop"}
 --
 -- >>> eval []  (EBin Lt (EInt 2) (EBool True))
 -- *** Exception: Error {errMsg = "type error: binop"}
@@ -167,12 +167,134 @@ exitError (Error msg) = return (VErr msg)
 --------------------------------------------------------------------------------
 eval :: Env -> Expr -> Value
 --------------------------------------------------------------------------------
-eval = error "TBD:eval"
+--eval = error "TBD:eval"
+eval _ (EInt int)                 = (VInt int)
+eval _ (EBool bool)               = (VBool bool) 
+eval _ (ENil)                     = (VNil)
+eval env (EVar id)                = (lookupId id env)
+
+eval env (EBin Plus expr1 expr2)  = evalOp Plus (eval env expr1) (eval env expr2)
+eval env (EBin Minus expr1 expr2) = evalOp Minus (eval env expr1) (eval env expr2)
+eval env (EBin Mul expr1 expr2)   = evalOp Mul  (eval env expr1) (eval env expr2)
+eval env (EBin Div expr1 expr2)   = evalOp Div  (eval env expr1) (eval env expr2)
+eval env (EBin Eq expr1 expr2)    = evalOp Eq   (eval env expr1) (eval env expr2)
+eval env (EBin Ne expr1 expr2)    = evalOp Ne   (eval env expr1) (eval env expr2)
+eval env (EBin Lt expr1 expr2)    = evalOp Lt   (eval env expr1) (eval env expr2)
+eval env (EBin Le expr1 expr2)    = evalOp Le   (eval env expr1) (eval env expr2)
+eval env (EBin And expr1 expr2)   = evalOp And  (eval env expr1) (eval env expr2)
+eval env (EBin Or expr1 expr2)    = evalOp Or   (eval env expr1) (eval env expr2)
+eval env (EBin Cons expr1 expr2)  = evalOp Cons (eval env expr1) (eval env expr2)
+
+eval env (EIf expr1 expr2 expr3) 
+   | (((eval env expr1)) == ((eval env (EBool True)))) = (eval env expr2)
+   | (((eval env expr1)) == ((eval env (EBool False)))) = (eval env expr3)
+   | otherwise = VErr( throw (Error ("type error EIf")) )
+
+------------------------------------------------------------------------------- 
+
+eval env (ELet id expr1 expr2) = eval (env') expr2
+     where
+       env' = [(id, (eval env' expr1))] ++ env
+
+--let blank = blank
+--env dosent include 
+--let env including id env and e2
+
+--eval env (ELet id expr1 expr2) = let env' = ([(id, (eval env' expr1))] ++ env) in eval env' expr2
+     
+-------------------------------------------------------------------------------
+eval env (ELam id expr)           = (VClos env id expr)
+
+-------------------------------------------------------------------------------
+--eval env (EApp a b) = eval v e
+--     where 
+--     VClos env' id e = eval env a
+--     arg = eval env b
+--     v = [(id , (arg + env'))] 
+     
+eval env (EApp a b) = case (eval env a) of
+     VClos env' id e -> eval ( [(id, (eval env b))] ++ env' ) e
+     VPrim f -> f (eval env b) 
+     _ -> VErr( throw (Error ("type error EApp")) )
+
 
 --------------------------------------------------------------------------------
 evalOp :: Binop -> Value -> Value -> Value
 --------------------------------------------------------------------------------
-evalOp = error "TBD:evalOp"
+--evalOp a b c = error "TBD:evalOp"
+-- = -- -- is the example stuff on how to handel Err _ honestly no clue how to handel that case atm.
+
+evalOp Plus (VInt value1) (VInt value2)  = (VInt (value1 + value2))
+evalOp Plus _ _                          = VErr( throw (Error ("type error: binop")) )
+--evalOp Plus (VClos _ _ value1) (VClos _ _ value2)  = (VClos _ _ (value1 + value2))
+
+evalOp Minus (VInt value1) (VInt value2) = (VInt (value1 - value2))
+evalOp Minus _ _                         = VErr( throw (Error ("type error: binop")) )
+
+evalOp Mul (VInt value1)  (VInt value2)  = (VInt (value1 * value2))
+evalOp Mul _ _                           = VErr( throw (Error ("type error: binop")) )
+
+evalOp Div (VInt value1) (VInt value2)   = (VInt (div value1 value2))
+evalOp Div (VInt _) (VInt 0)             = VErr( throw (Error ("type error: binop")) )
+evalOp Div _ _                           = VErr( throw (Error ("type error: binop")) )
+
+evalOp Eq (VInt value1)  (VInt value2)   = (VBool (value1 == value2))
+evalOp Eq (VBool value1) (VBool value2)  = (VBool (value1 == value2))
+evalOp Eq (VNil) (VNil)                  = (VBool True)
+evalOp Eq (VNil) _                  = (VBool False)
+evalOp Eq  _ (VNil)                 = (VBool False)
+evalOp Eq (VPair value1 value2) (VPair value3 value4)  
+                          = case ((evalOp Eq value1 value3), (evalOp Eq value2 value4)) of  
+                          (VBool True, VBool True) -> (VBool True)     
+                          (VBool _, VBool _) -> (VBool False)
+                          (VBool _, VNil) -> (VBool False)
+                          (VNil, VBool _) -> (VBool False)
+                          (VInt _, VNil) -> (VBool False)
+                          (VNil, VInt _) -> (VBool False)
+                          (VNil, VNil) -> (VBool True)
+                          _ -> VErr( throw (Error ("type error: binop")) )
+                                   
+evalOp Eq _ _                            = VErr( throw (Error ("type error: binop")) )
+
+--recurrsions if they are are the two remaining list equavlent.
+
+evalOp Ne (VInt value1)  (VInt value2)   = (VBool (value1 /= value2))
+evalOp Ne (VBool value1) (VBool value2)  = (VBool (value1 /= value2))
+evalOp Ne (VPair value1 value2) (VPair value3 value4)  
+                          = case ((evalOp Ne value1 value3), (evalOp Ne value2 value4)) of  
+                          (VBool True, VBool True) -> (VBool False)     
+                          (VBool _, VBool _) -> (VBool True)
+                          (VBool _, VNil) -> (VBool True)
+                          (VNil, VBool _) -> (VBool True)
+                          (VInt _, VNil) -> (VBool True)
+                          (VNil, VInt _) -> (VBool True)
+                          (VNil, VNil) -> (VBool False)
+                          _ -> VErr( throw (Error ("type error: binop")) )
+evalOp Ne _ _                            = VErr( throw (Error ("type error: binop")) )
+
+evalOp Lt (VInt value1) (VInt value2)    = (VBool (value1 < value2))
+evalOp Lt _ _                            = VErr( throw (Error ("type error: binop")) )
+
+evalOp Le (VInt value1) (VInt value2)    = (VBool (value1 <= value2))
+evalOp Le _ _                            = VErr( throw (Error ("type error: binop")) )
+
+evalOp And (VBool value1) (VBool value2) = (VBool (value1 && value2))
+evalOp And _ _                           = VErr( throw (Error ("type error: binop")) )
+
+evalOp Or (VBool value1) (VBool value2)  = (VBool (value1 || value2))
+evalOp Or _ _                            = VErr( throw (Error ("type error: binop")) )
+
+
+
+evalOp Cons (x) (VNil)                   = (VPair x (VNil))
+evalOp Cons (x) (VPair a b)              = (VPair x (VPair a b))
+
+evalOp Cons _ _                          = VErr( throw (Error ("type error: binop")) )
+
+
+-- more than one case errors maybe thrown 
+
+-- evalOp Cons value1 value2 = (VPair(value1 Cons value2)) more than one case errors maybe thrown
 
 --------------------------------------------------------------------------------
 -- | `lookupId x env` returns the most recent
@@ -181,22 +303,39 @@ evalOp = error "TBD:evalOp"
 --   environment, and throws an `Error` otherwise.
 --
 -- >>> lookupId "z1" env0
--- 0
+-- vint0
 -- >>> lookupId "x" env0
--- 1
+-- vint1
 -- >>> lookupId "y" env0
--- 2
+-- vint2
 -- >>> lookupId "mickey" env0
 -- *** Exception: Error {errMsg = "unbound variable: mickey"}
 --------------------------------------------------------------------------------
 lookupId :: Id -> Env -> Value
 --------------------------------------------------------------------------------
-lookupId = error "TBD:lookupId"
+--lookupId = error "TBD:lookupId"
+--lookupId key [] = error ("unbound variable: " ++ key)
+lookupId key [] = throw (Error ("unbound variable: " ++ key))
+lookupId key ((id, val):t) = if key == id then val else lookupId key t 
 
 prelude :: Env
 prelude =
   [ -- HINT: you may extend this "built-in" environment
     -- with some "operators" that you find useful...
+   ("head", VPrim(\x -> case x of
+                        VPair z r -> z
+                        _ -> VErr( throw (Error ("type error:prelude")) )
+                  ) 
+   ),
+   
+   ("tail", VPrim(\x -> case x of
+                        VPair z r -> r
+                        _ -> VErr( throw (Error ("type error:prelude")) )
+                  ) 
+   )
+   
+    
+   
   ]
 
 env0 :: Env
@@ -208,3 +347,4 @@ env0 =  [ ("z1", VInt 0)
         ]
 
 --------------------------------------------------------------------------------
+
