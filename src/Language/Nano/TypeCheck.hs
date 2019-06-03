@@ -35,7 +35,7 @@ instance HasTVars Type where
   freeTVars ttype = case ttype of 
             TInt -> []
             TBool -> []
-            t1 :=> t2 -> (freeTVars t1) ++ (freeTVars t2)
+            t1 :=> t2 -> L.nub ((freeTVars t1) ++ (freeTVars t2))
             TVar ttvar -> [ttvar] 
             TList ttlist -> freeTVars ttlist      
 --  freeTVars t     = error "TBD: type freeTVars"
@@ -46,7 +46,7 @@ instance HasTVars Type where
 instance HasTVars Poly where
    freeTVars ppoly = case ppoly of 
              Mono ttype -> freeTVars ttype
-             Forall ttvar ttype ->  L.filter (\a -> (ttvar /= a)) (freeTVars ttype)
+             Forall ttvar ttype -> L.nub( L.filter (\a -> (ttvar /= a)) (freeTVars ttype))
  --    Forall ttvar ttype -> freeTVars ttype L.\\ ([ttvar] ++ [ttvar]) 
                  --[a a]  t1 // [a] t2 
 
@@ -201,16 +201,18 @@ unify _ ttype ttype' = throw (Error ("type error: cannot unify " ++ (show ttype)
 infer :: InferState -> TypeEnv -> Expr -> (InferState, Type)
 --infer st _   (EInt _)          = error "TBD: infer EInt" -- (st, TInt)
 --infer st _   (EBool _)         = error "TBD: infer EBool"
-infer st gamma (EVar x)        = error "TBD: infer EVar"
+--infer st gamma (EVar x)        = error "TBD: infer EVar"
 --infer st gamma (ELam x body)   = error "TBD: infer ELam"
 --infer st gamma (EApp e1 e2)    = error "TBD: infer EApp"
 --infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
 infer st _   (EInt _)          = (st, TInt)
 infer st _   (EBool _)         = (st, TBool)
 
---infer st _ (EVar x)        = (st, (TVar x)) 
---infer st gamma (EVar key)        = (st, (instantiate 0 (lookupVarType key gamma)) )
 
+--infer st gamma (EVar x)        = error "TBD: infer EVar"
+--infer st _ (EVar x)        = (st, (TVar x)) 
+--infer st gamma (EVar key)        = (st, (instantiate (st stCnt) (lookupVarType key gamma)) )
+--instantate
       
 -- need gamma to be someting not as expr
 
@@ -225,6 +227,7 @@ infer sub tEnv (ELam x e)   = (sub', ttype :=> tBody)
 infer st gamma (EApp e1 e2)    = error "TBD: infer EApp"
 
 infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
+--generalize 
 
 infer st gamma (EBin op e1 e2) = infer st gamma asApp
   where
