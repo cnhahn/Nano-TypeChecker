@@ -249,7 +249,8 @@ When you are done you should get the following behavior:
 >>> extendSubst [("a", TInt)] "b" TBool
 [("b",Bool), ("a",Int)]
 
->>> extendSubst [("a", list "b")] "b" TBool
+-->>> extendSubst [("a", list "b")] "b" TBool
+>>> extendSubst [("a", list (EVar "b"))] "b" TBool
 [("b",Bool), ("a",[Bool])]
 ```
 
@@ -300,13 +301,17 @@ remember to *guarantee* this property whenever you call `unifyTVar`.
 When you are done you should get the following behavior:
 
 ```haskell
->>> stSub $ unifyTVar initInferState "a" (list "b")
+-->>> stSub $ unifyTVar initInferState "a" (list "b")
+>>> stSub $ unifyTVar initInferState "a" (list (TVar "b"))
 [("a",[b])]
 
->>> stSub $ unifyTVar initInferState "a" "a"
+-->>> stSub $ unifyTVar initInferState "a" "a"
+>>> stSub $ unifyTVar initInferState "a" (TVar "a")
 []
 
->>> stSub $ unifyTVar initInferState "a" (list "a")
+
+-->>> stSub $ unifyTVar initInferState "a" (list "a")
+>>> stSub $ unifyTVar initInferState "a" (list (TVar "a"))
 *** Exception: Error {errMsg = "type error: cannot unify a and [a] (occurs check)"}
 ```
 
@@ -408,10 +413,12 @@ generalize :: TypeEnv -> Type -> Poly
 When you are done you should observe the following behavior:
 
 ```haskell
->>> generalize [] ("a" :=> "a")
+-->>> generalize [] ("a" :=> "a")
+generalize [] ((TVar "a") :=> (TVar "a"))
 forall a . (a) -> a
 
->>> generalize [("x", Mono "a")] ("a" :=> "a")
+-->>> generalize [("x", Mono "a")] ("a" :=> "a")
+generalize [("x", Mono (TVar "a"))] ((TVar "a") :=> (TVar "a"))
 (a) -> a
 ```
 
@@ -431,7 +438,8 @@ Remember to *guarantee* this property whenever you construct your own polymorphi
 When you are done you should observe the following behavior:
 
 ```haskell
->>> instantiate 0 (Forall "a" (Forall "b" ("a" :=> "b")))
+instantiate 0 (Forall "a" (Forall "b" (Mono ((TVar "a") :=> (TVar "b")))))
+-->>> instantiate 0 (Forall "a" (Forall "b" ("a" :=> "b")))
 (2,(a0) -> a1)
 ```
 
