@@ -180,10 +180,10 @@ unify st TBool TBool  = st
 unify st (TVar ttvar) ttvar' = unifyTVar st ttvar ttvar'
 unify st (ttvar) (TVar ttvar') = unifyTVar st ttvar' ttvar
 
-unify st (t1 :=> t2) (t3 :=> t4) = InferState ( stsub' ++ stsub ) (count' +1)
+unify st (t1 :=> t2) (t3 :=> t4) = stsub'
      where 
-        InferState stsub count = unify st t1 t3
-        InferState stsub' count' = unify st t2 t4
+        stsub = unify st t1 t3
+        stsub'= unify stsub t2 t4
 
 --unify st (t1 :=> t2)(t3 :=> t4) = L.union stsub stsub'
   --    where 
@@ -211,7 +211,15 @@ infer st _   (EBool _)         = (st, TBool)
 
 --infer st gamma (EVar x)        = error "TBD: infer EVar"
 --infer st _ (EVar x)        = (st, (TVar x)) 
---infer st gamma (EVar key)        = (st, (instantiate (st stCnt) (lookupVarType key gamma)) )
+infer (InferState stsub stcnt) gamma (EVar key)  = ((InferState stsub num), ttype)
+--(st, snd (instantiate stcnt (lookupVarType key gamma)) )
+    where
+      --st = instat sub n
+-- = ((infersta sub num),t)
+     (num, ttype) = instantiate stcnt (lookupVarType key gamma)
+
+  --    where 
+  --      InferState stsub stcnt = unify 
 --instantate
       
 -- need gamma to be someting not as expr
@@ -245,34 +253,15 @@ infer st gamma ENil = infer st gamma (EVar "[]")
 generalize :: TypeEnv -> Type -> Poly
 --generalize ((id, ttpoly):gamma) t = error "TBD: generalize"
 
---generalize ttypeEnv t = case t of 
- --            (Mono ttype') -> Mono (ttype')
-   --          (Forall ttvar ttype) -> Forall ttvar ( generalize (L.nub ( (freeTVars ttype) L.\\ ttypeEnv ) ) t)
+generalize gamma t = foldl (\acc x -> Forall x acc) (Mono t) listfreeTVs
+     where 
+        listfreeTVs = L.nub ((freeTVars t) L.\\ freeTV)
+        freeTV = freeTVars gamma  
 
---generalize gamma t = Forall (L.head varType) $ Mono (TVar (L.head newType))
---generalize gamma t = throw (Error ("varType : " ++ (show varType) ++ " envVarType : " ++ (show envVarType) ++ " newType : " ++ (show newType)) )
---           where 
-  --            varType = freeTVars t
-  --            envVarType = freeTVars gamma
-  --            newType = (varType L.\\ envVarType)
+        --combine   = concat (map (\(_, x) -> freeTVars x) gamma)
 
---generalize tEnv ttype = case ttype of
-  --  ttype -> Mono ttype
-    --Forall ttvar ttype' -> Forall ttvar $ Mono (newType)
-    --TVar ttvar-> Forall ttvar (generalize tEnv ($ Mono newType))
-      --   where 
-          --    varType = freeTVars ttvar
-        --      envVarType = freeTVars ttype
-            --  newType = L.nub (varType L.\\ envVarType)
+--generalize gamma ttype = let freeTVs = freeTVars ttype L.\\ concat (map (\(_, b) -> freeTVars b) gamma) in foldl (\acc m -> Forall m acc) (Mono ttype) freeTVs          
 
---generalize gamma t = foldl (\acc x -> Forall x acc) (Mono t) listfreeTVs
-   --  where 
-     --   listfreeTVs = (freeTVars t) L.\\ combine -- (concat (map (\(_, x) -> freeTVars x) gamma))
-       -- combine   = concat (map (\(_, x) -> freeTVars x) gamma)
-
-generalize gamma ttype = let freeTVs = freeTVars ttype L.\\ concat (map (\(_, b) -> freeTVars b) gamma) in foldl (\acc m -> Forall m acc) (Mono ttype) freeTVs          
-
-               
 -- | Instantiate a polymorphic type into a mono-type with fresh type variables
 instantiate :: Int -> Poly -> (Int, Type)
 --instantiate n s = error "TBD: instantiate"
