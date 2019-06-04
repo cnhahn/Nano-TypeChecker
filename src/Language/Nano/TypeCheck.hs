@@ -166,7 +166,7 @@ unifyTVar st ttvar ttvar'
      | ttvar' == (TVar ttvar)        = st
      | elem ttvar (freeTVars ttvar') = throw (Error ("type error: cannot unify " ++ ttvar ++ " and " ++ (show ttvar') ++ " (occurs check) " )) 
      | otherwise                     = extendState st ttvar ttvar'
-    
+
 -- | Unify two types;
 --   if successful return an updated state, otherwise throw an error
 unify :: InferState -> Type -> Type -> InferState
@@ -205,33 +205,42 @@ infer :: InferState -> TypeEnv -> Expr -> (InferState, Type)
 --infer st gamma (ELam x body)   = error "TBD: infer ELam"
 --infer st gamma (EApp e1 e2)    = error "TBD: infer EApp"
 --infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
-infer ist _   (EInt _)          = (ist, TInt)
-infer ist _   (EBool _)         = (ist, TBool)
+infer ifst _   (EInt _)          = (ifst, TInt)
+infer ifst _   (EBool _)         = (ifst, TBool)
 
-infer (InferState stsub stcnt) gamma (EVar key)  = ((InferState stsub num), ttype)
+infer (InferState stsub stcnt) tEnv (EVar key)  = ((InferState stsub count), ttype)
     where
-     (num, ttype) = instantiate stcnt (lookupVarType key gamma)
+     (count, ttype) = instantiate stcnt (lookupVarType key tEnv)
 --instantate   -- need gamma to be someting not as expr --instantate c and lookupvartype on key gamma
  
-infer sub tEnv (ELam x e) = (sub', tX' :=> tBody)
+infer ifst tEnv (ELam id expr) = (subst, tX' :=> ttype)
      where 
-       tEnv' = tEnv ++ [(x, (Mono tX))]
-       tX = (freshTV (stCnt sub))
-       sub2 = InferState (stSub sub) (stCnt sub + 1)       
-       (sub', tBody) = infer sub2 tEnv' e
-       tX' = apply (stSub sub') tX       
+       tEnv' = tEnv ++ [(id, (Mono tX))]
+       tX = (freshTV (stCnt ifst))
+       ifst' = InferState (stSub ifst) (stCnt ifst + 1)       
+       (subst, ttype) = infer ifst' tEnv' expr
+       tX' = apply (stSub subst) tX       
 
 
-infer sub tEnv (EApp expr1 expr2)    = ( (InferState (stsubst') (stcount + 1)), (apply (stSub uunify) (freshTV (stcount + 1)) ) ) 
+infer ifst tEnv (EApp expr1 expr2)    = ( (InferState (stsubst') (stcount + 1)), (apply (stSub uifst) (freshTV (stcount + 1)) ) ) 
   where 
-    (subst, ttype) = infer sub tEnv expr1
-    (subst', ttype') = infer subst tEnv expr2
-    uunify = unify subst' (ttype' :=> (freshTV (stcount + 1))) (ttype)
-    stcount = (stCnt subst') 
-    stsubst' = (stSub subst') 
-    stsubst = (stSub subst)
+    (iifst, ttype) = infer ifst tEnv expr1
+    (iifst', ttype') = infer iifst tEnv expr2
+    uifst = unify iifst' (ttype' :=> (freshTV (stcount + 1))) (ttype)
+    stcount = (stCnt iifst') 
+    stsubst' = (stSub iifst') 
+    stsubst = (stSub iifst)
 
 infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
+--infer ifst tEnv (ELet id expr1 expr2)  = ( (InferState (stsubst') (stcount + 1)), (apply (stSub uifst) (freshTV (stcount + 1)) ) ) 
+--  where
+--    (iifst, ttype) = infer ifst tEnv expr1
+--    (iifst', ttype) = infer iifst' tEnv expr1
+--    uifst = unfiy iifst' (
+--    stcount = (stCnt iifst') 
+--    stsubst' = (stSub iifst') 
+--    stsubst = (stSub iifst)
+
 --generalize 
 
 infer st gamma (EBin op e1 e2) = infer st gamma asApp
@@ -281,14 +290,14 @@ preludeTypes =
   , ("/",    Mono $ TInt :=> TInt :=> TInt)
   , ("==",   Forall "something" . Mono $ TVar "something" :=> TVar "something" :=> TBool)
   , ("!=",   Forall "something" . Mono $ TVar "something" :=> TVar "something" :=> TBool)
-  , ("<",    Mono $ TBool :=> TBool :=> TBool)--
-  , ("<=",   Mono $ TBool :=> TBool :=> TBool)--
-  , ("&&",   Mono $ TBool :=> TBool :=> TBool)
-  , ("||",   Mono $ TBool :=> TBool :=> TBool)
+  , ("<",    Forall "something" . Mono $ TVar "something" :=> TVar "something" :=> TBool)--
+  , ("<=",   Forall "something" . Mono $ TVar "something" :=> TVar "something" :=> TBool)--
+  , ("&&",   Forall "something" . Mono $ TVar "something" :=> TVar "something" :=> TBool)
+  , ("||",   Forall "something" . Mono $ TVar "something" :=> TVar "something" :=> TBool)
   , ("if",   Forall "something" $ Mono (TBool :=> TVar "something" :=> TVar "something" :=> TVar "something"))
   -- lists: 
-  , ("[]",   error "TBD: []")
-  , (":",    error "TBD: :")
-  , ("head", error "TBD: head")
-  , ("tail", error "TBD: tail")
+  , ("[]",   Forall "something" . Mono $ TList (TVar "something"))
+  , (":",    Forall "something" . Mono $ TVar "something" :=> TList (TVar "something") :=> TList (TVar "something") )
+  , ("head", Forall "something" . Mono $ TList (TVar "something") :=> TVar "something")
+  , ("tail", Forall "something" . Mono $ TList (TVar "something") :=> TList (TVar "something"))
   ]
