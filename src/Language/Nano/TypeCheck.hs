@@ -210,27 +210,27 @@ infer st _   (EBool _)         = (st, TBool)
 
 
 --infer st gamma (EVar x)        = error "TBD: infer EVar"
---infer st _ (EVar x)        = (st, (TVar x)) 
+
 infer (InferState stsub stcnt) gamma (EVar key)  = ((InferState stsub num), ttype)
---(st, snd (instantiate stcnt (lookupVarType key gamma)) )
     where
-      --st = instat sub n
--- = ((infersta sub num),t)
      (num, ttype) = instantiate stcnt (lookupVarType key gamma)
-
-  --    where 
-  --      InferState stsub stcnt = unify 
---instantate
-      
--- need gamma to be someting not as expr
-
---instantate c and lookupvartype on key gamma
+--instantate   -- need gamma to be someting not as expr --instantate c and lookupvartype on key gamma
  
 --infer sub tEnv (ELam x e)   = error "TBD: infer ELam"
-infer sub tEnv (ELam x e)   = (sub', ttype :=> tBody)
+--infer sub tEnv (ELam x e)   = (sub', ttype :=> tBody)
+  --   where 
+    --   (sub', tBody) = infer sub tEnv e
+     --  (Mono ttype)  = lookupVarType x tEnv
+
+infer sub tEnv (ELam x e) = (sub', tX' :=> tBody)
      where 
-       (sub', tBody) = infer sub tEnv e
-       (Mono ttype)  = lookupVarType x tEnv
+       tEnv' = tEnv ++ [(x, (Mono tX))]
+       tX = (freshTV (stCnt sub))
+       sub2 = InferState (stSub sub) (stCnt sub + 1)       
+       (sub', tBody) = infer sub2 tEnv' e
+       tX' = apply (stSub sub') tX       
+
+
 
 infer st gamma (EApp e1 e2)    = error "TBD: infer EApp"
 
