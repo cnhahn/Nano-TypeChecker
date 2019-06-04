@@ -129,7 +129,7 @@ instance Substitutable TypeEnv where
       
 -- | Extend substitution with a new type assignment
 extendSubst :: Subst -> TVar -> Type -> Subst
-extendSubst sub ttvar ttype = [(ttvar, (apply sub ttype))] ++ arr 
+extendSubst sub ttvar ttype = arr ++ [(ttvar, (apply sub ttype))] 
        where 
          arr = map func sub 
          func (ttvar', ttype') = (ttvar', (apply sub' ttype'))
@@ -232,14 +232,16 @@ infer ifst tEnv (EApp expr1 expr2)    = ( (InferState (stsubst') (stcount + 1)),
     stsubst = (stSub iifst)
 
 infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
---infer ifst tEnv (ELet id expr1 expr2)  = ( (InferState (stsubst') (stcount + 1)), (apply (stSub uifst) (freshTV (stcount + 1)) ) ) 
---  where
---    (iifst, ttype) = infer ifst tEnv expr1
---    (iifst', ttype) = infer iifst' tEnv expr1
---    uifst = unfiy iifst' (
---    stcount = (stCnt iifst') 
---    stsubst' = (stSub iifst') 
---    stsubst = (stSub iifst)
+
+--infer ifst tEnv (ELet id expr1 expr2)  = ( (InferState (stsubst') (stcount + 1)), ttype' ) 
+ -- where
+   -- (iifst, ttype) = infer ifst tEnv expr1
+   -- (iifst', ttype') = infer iifst' tEnv' expr2
+   -- newPoly = generalize (apply (stSub iifst) tEnv) ttype
+   -- tEnv' = tEnv ++ [(id, newPoly)]
+   -- stcount = (stCnt iifst') 
+   -- stsubst' = (stSub iifst') 
+   -- stsubst = (stSub iifst)
 
 --generalize 
 
@@ -260,12 +262,12 @@ generalize :: TypeEnv -> Type -> Poly
 --generalize ((id, ttpoly):gamma) t = error "TBD: generalize"
 
 generalize gamma t = foldl (\acc x -> Forall x acc) (Mono t) listfreeTVs
-     where 
+     where
         listfreeTVs = L.nub ((freeTVars t) L.\\ freeTV)
-        freeTV = freeTVars gamma  
+        freeTV = freeTVars gamma
         --combine   = concat (map (\(_, x) -> freeTVars x) gamma)
 
---generalize gamma ttype = let freeTVs = freeTVars ttype L.\\ concat (map (\(_, b) -> freeTVars b) gamma) in foldl (\acc m -> Forall m acc) (Mono ttype) freeTVs          
+--generalize gamma ttype = let freeTVs = freeTVars ttype L.\\ concat (map (\(_, b) -> freeTVars b) gamma) in foldl (\acc m -> Forall m acc) (Mono ttype) freeTVs
 
 -- | Instantiate a polymorphic type into a mono-type with fresh type variables
 instantiate :: Int -> Poly -> (Int, Type)
@@ -274,13 +276,11 @@ instantiate :: Int -> Poly -> (Int, Type)
 
 instantiate count ppoly = case ppoly of
          (Mono ttype)      -> (count, ttype)
-         (Forall ttvar ttype) -> instantiate (count +1) (apply [(ttvar, (freshTV count))] ttype) 
+         (Forall ttvar ttype) -> instantiate (count +1) (apply [(ttvar, (freshTV count))] ttype)
 
 --instantiate count (Mono ttype) = (count, ttype)
---instantiate count (Forall as ttype) = instantiate (count+1) (apply [(as, (freshTV count))] ttype)         
+--instantiate count (Forall as ttype) = instantiate (count+1) (apply [(as, (freshTV count))] ttype)
 
-
-      
 -- | Types of built-in operators and functions      
 preludeTypes :: TypeEnv
 preludeTypes =
