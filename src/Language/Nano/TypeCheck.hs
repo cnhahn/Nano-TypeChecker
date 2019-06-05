@@ -223,19 +223,23 @@ infer sub tEnv (ELam x e) = (sub', tX' :=> tBody)
       
 
 
-infer sub tEnv (EApp expr1 expr2)    = ( (InferState (stsubst') (stcount + 1)), (apply (stSub uunify) (freshTV (stcount + 1)) ) ) 
+infer st tEnv (EApp expr1 expr2)    = ( st' , (lookupTVar ttype'' st'_sub) ) 
 
 --infer sub tEnv (EApp expr1 expr2)    = ( (InferState (stsubst') (stcount + 1)), (lookupTVar (stSub uunify) (stSub (InferState (stsubst') (stcount + 1)) ) ) ) 
 
       where 
-        (subst, ttype) = infer sub tEnv expr1
-        (subst', ttype') = infer subst tEnv expr2
-        uunify = unify subst' (ttype) (ttype' :=> (freshTV (stcount + 1))) 
+        (sub, ttype) = infer st tEnv expr1
+        (sub', ttype') = infer sub tEnv expr2
+        newType = (ttype' :=> (TVar ttype''))
+        (TVar ttype'') = (freshTV (cnt_sub'))
+        sub'' = unify sub' (ttype) newType 
+        st' = (InferState (st_sub'') (cnt_sub'' + 1))
 --might need state for the fresh type variable
-        stcount = (stCnt subst') 
-        stsubst' = (stSub subst') 
-        stsubst = (stSub subst)
-
+        cnt_sub' = (stCnt sub') 
+        st_sub'  = (stSub sub') 
+        cnt_sub''= (stCnt sub'' )
+        st_sub'' = (stSub sub'' )
+        st'_sub = (stSub st' )
 
 --infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
 -- tEnv' = tEnv ++ [(id, newPoly)]
