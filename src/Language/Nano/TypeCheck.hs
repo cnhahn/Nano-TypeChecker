@@ -231,17 +231,18 @@ infer ifst tEnv (EApp expr1 expr2)    = ( (InferState (stsubst') (stcount + 1)),
     stsubst' = (stSub iifst') 
     stsubst = (stSub iifst)
 
-infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
+--infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
 
---infer ifst tEnv (ELet id expr1 expr2)  = ( (InferState (stsubst') (stcount + 1)), ttype' ) 
- -- where
-   -- (iifst, ttype) = infer ifst tEnv expr1
-   -- (iifst', ttype') = infer iifst' tEnv' expr2
-   -- newPoly = generalize (apply (stSub iifst) tEnv) ttype
-   -- tEnv' = tEnv ++ [(id, newPoly)]
-   -- stcount = (stCnt iifst') 
-   -- stsubst' = (stSub iifst') 
-   -- stsubst = (stSub iifst)
+infer ifst tEnv (ELet id expr1 expr2)  = ( iifst' , ttype' ) 
+  where
+   (iifst, ttype) = infer ifst tEnv expr1
+   (iifst', ttype') = infer iifst tEnv' expr2
+   newPoly = generalize (tEnv) ttype
+     -- tEnv' = tEnv ++ [(id, newPoly)]
+   tEnv' = extendTypeEnv id newPoly tEnv
+   stcount = (stCnt iifst') 
+   stsubst' = (stSub iifst') 
+   stsubst = (stSub iifst)
 
 --generalize 
 
@@ -263,7 +264,7 @@ generalize :: TypeEnv -> Type -> Poly
 
 generalize gamma t = foldl (\acc x -> Forall x acc) (Mono t) listfreeTVs
      where
-        listfreeTVs = L.nub ((freeTVars t) L.\\ freeTV)
+        listfreeTVs = L.nub ((freeTVars t) L.\\ freeTV )
         freeTV = freeTVars gamma
         --combine   = concat (map (\(_, x) -> freeTVars x) gamma)
 
@@ -279,7 +280,7 @@ instantiate count ppoly = case ppoly of
          (Forall ttvar ttype) -> instantiate (count +1) (apply [(ttvar, (freshTV count))] ttype)
 
 --instantiate count (Mono ttype) = (count, ttype)
---instantiate count (Forall as ttype) = instantiate (count+1) (apply [(as, (freshTV count))] ttype)
+--instantiate count (Forall as ttype) = instantiate (count+1) (apply [(as, (freshT count))] ttype)
 
 -- | Types of built-in operators and functions      
 preludeTypes :: TypeEnv
