@@ -253,8 +253,9 @@ infer inferSt tEnv (ELet id expr1 expr2)  = ( newInferSt'' , ttype' )
 
          (newInferSt, ttype) = infer st' ttEnv expr1
 
+         (TVar x) = tX
         
-         newInferSt' = unify newInferSt (lookupTVar ((L.head (freeTVars tX))) (stSub newInferSt) ) (ttype) 
+         newInferSt' = unify newInferSt (lookupTVar (x) (stSub newInferSt) ) (ttype) 
         --(L.head (freeTVars tX))
 
          newPoly = generalize (tEnv) ttype
@@ -299,7 +300,6 @@ instantiate :: Int -> Poly -> (Int, Type)
 instantiate count ppoly = case ppoly of
          (Mono ttype)      -> (count, ttype)
          (Forall ttvar ttype) -> instantiate (count +1) (apply [(ttvar, (freshTV count))] ttype)
-
 
 
 -- | Types of built-in operators and functions      
