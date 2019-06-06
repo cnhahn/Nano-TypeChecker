@@ -223,15 +223,12 @@ infer sub tEnv (ELam x e) = (sub', tX' :=> tBody)
       
 
 
-infer st tEnv (EApp expr1 expr2)    = ( st' , (lookupTVar ttype'' st'_sub) ) 
-
---infer sub tEnv (EApp expr1 expr2)    = ( (InferState (stsubst') (stcount + 1)), (lookupTVar (stSub uunify) (stSub (InferState (stsubst') (stcount + 1)) ) ) ) 
-
+infer st tEnv (EApp expr1 expr2)    = ( st' , (lookupTVar ttvar st'_sub) ) 
       where 
         (sub, ttype) = infer st tEnv expr1
         (sub', ttype') = infer sub tEnv expr2
-        newType = (ttype' :=> (TVar ttype''))
-        (TVar ttype'') = (freshTV (cnt_sub'))
+        newType = (ttype' :=> (TVar ttvar))
+        (TVar ttvar) = (freshTV (cnt_sub'))
         sub'' = unify sub' (ttype) newType 
         st' = (InferState (st_sub'') (cnt_sub'' + 1))
 --might need state for the fresh type variable
@@ -244,13 +241,28 @@ infer st tEnv (EApp expr1 expr2)    = ( st' , (lookupTVar ttype'' st'_sub) )
 --infer st gamma (ELet x e1 e2)  = error "TBD: infer ELet"
 -- tEnv' = tEnv ++ [(id, newPoly)]
 
-infer inferSt tEnv (ELet id expr1 expr2)  = ( newInferSt' , ttype' ) 
+infer inferSt tEnv (ELet id expr1 expr2)  = ( newInferSt'' , ttype' ) 
        where
-         (newInferSt, ttype) = infer inferSt tEnv expr1
-         (newInferSt', ttype') = infer newInferSt tEnv' expr2
+         cnt_sub'= (stCnt inferSt)
+         st_sub' = (stSub inferSt)
+ 
+         ttEnv = tEnv ++ [(id, (Mono tX))]
+         tX = (freshTV (stCnt inferSt))
+
+         st' = (InferState (st_sub') (cnt_sub' + 1))
+
+         (newInferSt, ttype) = infer st' ttEnv expr1
+
+        
+         newInferSt' = unify newInferSt (lookupTVar ((L.head (freeTVars tX))) (stSub newInferSt) ) (ttype) 
+        --(L.head (freeTVars tX))
+
          newPoly = generalize (tEnv) ttype
          tEnv' = extendTypeEnv id newPoly tEnv
+         
+         (newInferSt'', ttype') = infer newInferSt' tEnv' expr2
 
+                  
 
 
 --generalize 
@@ -277,7 +289,7 @@ generalize gamma t = foldl (\acc x -> Forall x acc) (Mono t) listfreeTVs
         freeTV = freeTVars gamma
         --combine   = concat (map (\(_, x) -> freeTVars x) gamma)
 
---generalize gamma ttype = let freeTVs = freeTVars ttype L.\\ concat (map (\(_, b) -> freeTVars b) gamma) in foldl (\acc m -> Forall m acc) (Mono ttype) freeTVs
+
 
 -- | Instantiate a polymorphic type into a mono-type with fresh type variables
 instantiate :: Int -> Poly -> (Int, Type)
@@ -288,8 +300,7 @@ instantiate count ppoly = case ppoly of
          (Mono ttype)      -> (count, ttype)
          (Forall ttvar ttype) -> instantiate (count +1) (apply [(ttvar, (freshTV count))] ttype)
 
---instantiate count (Mono ttype) = (count, ttype)
---instantiate count (Forall as ttype) = instantiate (count+1) (apply [(as, (freshT count))] ttype)
+
 
 -- | Types of built-in operators and functions      
 preludeTypes :: TypeEnv
@@ -300,8 +311,8 @@ preludeTypes =
   , ("/",    Mono $ TInt :=> TInt :=> TInt)
   , ("==",   Forall "something" . Mono $ TVar "something" :=> TVar "something" :=> TBool)
   , ("!=",   Forall "something" . Mono $ TVar "something" :=> TVar "something" :=> TBool)
-  , ("<",    Mono $ TBool:=> TBool :=> TBool)--
-  , ("<=",   Mono $ TBool :=> TBool :=> TBool)--
+  , ("<",    Mono $ TInt :=> TInt :=> TBool)--
+  , ("<=",   Mono $ TInt  :=> TInt  :=> TBool)--
   , ("&&",   Mono $ TBool :=> TBool :=> TBool)
   , ("||",   Mono $ TBool :=> TBool :=> TBool)
   , ("if",   Forall "something" $ Mono (TBool :=> TVar "something" :=> TVar "something" :=> TVar "something"))
