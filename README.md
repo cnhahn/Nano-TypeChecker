@@ -1,15 +1,10 @@
-# Assignment 5: Nano Types (240 points)
-
-## Due by Wednesday 6/5 by 11:59pm
-
-
 ## Overview
 
-The overall objective of this assignment is to
+The overall objective of this project is to
 better understand the notions of type checking, type inference, and polymorphism
 by implementing a type inference algorithm for Nano.
 
-The assignment is in the file:
+The project is in the file:
 
 + [TypeCheck.hs](/src/Language/Nano/TypeCheck.hs)
 
@@ -17,7 +12,7 @@ and
 
 + [tests/Test.hs](/tests/Test.hs) has some sample tests,
   and testing code that you will use to check your
-  assignments before submitting.
+  projects before submitting.
 
 You should only need to modify the parts of the files which say:
 
@@ -30,7 +25,7 @@ with suitable Haskell implementations.
 **Note:** Start early! Type inference has many subtle points that can take a while to get right.
 
 
-## Assignment Testing and Evaluation
+## Project Testing and Evaluation
 
 
 Most of the points, will be awarded automatically, by
@@ -74,7 +69,7 @@ Please commit all your code to gitlab, and indicate in your canvas submission yo
 
 ## Data Structures and Overview
 
-This assignment builds upon our previous implementation of Nano from HW4,
+This project builds upon our previous implementation of Nano from HW4,
 so most data types in `Types.hs` are the same.
 We have added the following definitions to support type inference.
 
@@ -131,12 +126,12 @@ A **type substitution** is also a dictionary, but it maps *type variables* to *t
 type Subst = [(TVar, Type)] 
 ```
 
-Throughout the assignment, make sure that the keys (type variables) in the substitution are *unique*.
+Throughout the project, make sure that the keys (type variables) in the substitution are *unique*.
 You also get to *assume* this property when you implement operations on substitutions.
 
 
 
-## Problem 1: Warm-up (70 points)
+## Part 1: Warm-up 
 
 In this problem, you will implement some helper functions for your type-checker
 which you will need later on.
@@ -159,7 +154,7 @@ instance HasTVars Poly where
 
 As always, you are allowed (and encouraged) to replace `freeTVars t` and `freeTVars s` with multiple equations for different patterns.
 
-Throughout this assignment, you are allowed to use any library functions,
+Throughout this project, you are allowed to use any library functions,
 as long as you don't add new `import` statements.
 In particular, some useful functions from the `List` library include `delete`, `nub`, and `\\` (look them up on Hoogle).
 Note: the `List` library is imported *qualified*:
@@ -184,7 +179,7 @@ When you are done you should get the following behavior:
 ```
 
 
-### (b) Substitutions: 50 points
+### (b) Substitutions
 
 Implement a function to lookup what a type variable maps to in a substitution: 
 
@@ -238,7 +233,7 @@ forall a . [a]
 ```
 
 Finally, use `apply` to implement the function `extendSubst`,
-which extends a substitution with a new type assignment:
+which extends a substitution with a new type project:
 
 ```haskell
 extendSubst :: Subst -> TVar -> Type -> Subst
@@ -255,7 +250,7 @@ When you are done you should get the following behavior:
 ```
 
 
-## Problem 2: Unification (50 points)
+## Part 2: Unification 
 
 Unification is a crucial part of type inference.
 In a nutshell, the inference algorithm works by:
@@ -280,11 +275,11 @@ which represents the "current state" of the unification and inference algorithms
 It remembers how many fresh type variables the algorithm has generated so far,
 alongside the "current substitution".
 
-### (a) Unification for type variables: 20 points
+### (a) Unification for type variables 
 
 Implement a function `unifyTVar st a t`
 that tries to unify a type variable `a` with a type `t`.
-If it succeeds, it records the new type assignment by extending the state `st`.
+If it succeeds, it records the new type project by extending the state `st`.
 If it fails, it throws an exception.
 
 ```haskell
@@ -315,11 +310,11 @@ When you are done you should get the following behavior:
 *** Exception: Error {errMsg = "type error: cannot unify a and [a] (occurs check)"}
 ```
 
-### (b) Unification for types: 30 points
+### (b) Unification for types
 
 Implement a function `unify st t1 t2`
 that tries to unify the types `t1` and `t2`.
-If it succeeds, it records the new type assignment by extending the state `st`.
+If it succeeds, it records the new type project by extending the state `st`.
 If it fails, it throws an exception.
 
 ```haskell
@@ -346,11 +341,11 @@ When you are done you should get the following behavior:
 *** Exception: Error {errMsg = "type error: cannot unify a and [a] (occurs check)"}
 ```
 
-## Problem 3: Type Inference (120 points)
+## Part 3: Type Inference
 
 Now we have everything in place to implement type inference!
 
-### (a) Mono-types: 20 points
+### (a) Mono-types
 
 Let's first consider the fragment of the language without:
 
@@ -391,7 +386,7 @@ Int
 **Note:** if you don't have a working Nano parser yet, use the function `typeOfExpr` instead and write ASTs by hand.
 
 
-### (b) Polymorphism: 50 points
+### (b) Polymorphism
 
 Now let's add support for polymorphism!
 
@@ -453,7 +448,7 @@ type-check the "double identity" example from the lecture:
 (Int) -> Int
 ```
 
-### (c) Built-in functions: 20 points
+### (c) Built-in functions
 
 Instead of implementing separate type inference for binary operators, conditionals, and list,
 we decided to represent them as **built-in functions**
@@ -466,7 +461,7 @@ since those are reserved for use as free type variables by the algorithm.
 
 At this point the first 18 tests should pass.
 
-### (d) Recursion: 30 points
+### (d) Recursion
 
 Modify your implementation of `infer` to support recursive function definitions.
 Once you are done, all tests should pass.
